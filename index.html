@@ -5,13 +5,30 @@
 </head>
 
 <body>
-    <input type="file" id="file-input" />
+    <input type="file" id="file-input" name="Import" />
     <input type="color" id="color1" name="head" value="#000000" index="1">
     <input type="color" id="color2" name="head" value="#ff0000" index="2">
     <input type="color" id="color3" name="head" value="#0000ff" index="3">
     <input type="color" id="color4" name="head" value="#ff00ff" index="4">
+    Brush
+    <select id="brush">
+        <option value="1">color 1</option>
+        <option value="2">color 2</option>
+        <option value="3">color 3</option>
+        <option value="4">color 4</option>
+    </select>
+    <button id="export" name="Export" onclick="document.getElementById('file-output').click();">Export</button>
+    <input type="file" id="file-output" style="display:none;" />
+
+    <h3>Selected Tile:</h3>
+    <div name="selected-tile">
+        <div></div>
+    </div>
     <h3>Contents of the file:</h3>
-    <pre id="file-content"></pre>
+    <div id="tiles" name="tiles">
+        <div></div>
+    </div>
+
 </body>
 <script src="./paint.js"></script>
 

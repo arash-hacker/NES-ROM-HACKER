@@ -1,14 +1,15 @@
 var canvas = document.createElement('canvas');
-var scale = 8
+var scale = 4
 var rom = []
 let CHR = []
 let colors = [
     document.getElementById("color1").value,
-    "rgba(255,   0,   0, 1)",
-    "rgba(  0,   0, 255, 1)",
-    "rgba(255, 0, 255, 1)"
+    document.getElementById("color2").value,
+    document.getElementById("color3").value,
+    document.getElementById("color4").value,
 ]
 let ctx = null
+let ctx2 = null
 function createCHR(rom, CHR) {
     const Z = 16 + (16384 * rom[4])
     let i = 0
@@ -42,7 +43,35 @@ function colorChange(index) {
 
     }
 }
-function readSingleFile(e) {
+function drawSprite(ct, x, y) {
+    ct.fillStyle = 'rgba(0,0,0,1)';
+    ct.fillRect(0, 0, 8 * scale, 8 * scale);
+    let ii = Math.floor(x / (8 * scale))
+    let jj = Math.floor(y / (8 * scale))
+    let selectedTile = jj * 32 * 8 + 8 * ii
+    console.log(selectedTile, x, y, ii, jj)
+    for (let py = 0; py < 8; py++) {
+        for (let px = 0; px < 8; px++) {//color pixel at x y
+            ct.fillStyle = colors[CHR[selectedTile + py][px]];
+            ct.fillRect(px * scale, py * scale, 1 * scale, 1 * scale);
+        }
+    }
+}
+function clickOnMainCanvas(e) {
+    // alert((e.clientX - e.target.offsetLeft) + " " + (e.clientY - e.target.offsetTop))
+    let sprite = document.createElement('canvas');
+    sprite.addEventListener("click", alert, false)
+    sprite.width = 8 * scale;
+    sprite.height = 8 * scale;
+    ctx2 = sprite.getContext("2d");
+    var selectedTile = document.getElementsByName("selected-tile")[0];
+    selectedTile.removeChild(selectedTile.lastChild);
+    selectedTile.appendChild(sprite);
+    ctx2.fillStyle = 'rgba(255,0,0,1)'
+    ctx2.fillRect(0, 0, 8 * scale, 8 * scale)
+    drawSprite(ctx2, e.clientX - e.target.offsetLeft, e.clientY - e.target.offsetTop)
+}
+function readFile(e) {
     var file = e.target.files[0];
     if (!file) {
         return;
@@ -53,12 +82,14 @@ function readSingleFile(e) {
         for (let i = 0; i < contents.length; i++) {
             rom = rom.concat(contents.charCodeAt(i))
         }
-        var canvas = document.createElement('canvas');
-        canvas.width = 32 * 8 * scale;
-        canvas.height = 16 * 8 * scale;
-        ctx = canvas.getContext("2d");
-        var body = document.getElementsByTagName("body")[0];
-        body.appendChild(canvas);
+        var mainCanvas = document.createElement('canvas');
+        mainCanvas.addEventListener("click", clickOnMainCanvas, false)
+        mainCanvas.width = 32 * 8 * scale;
+        mainCanvas.height = 16 * 8 * scale;
+        ctx = mainCanvas.getContext("2d");
+        var tiles = document.getElementsByName("tiles")[0];
+        tiles.removeChild(tiles.lastChild);
+        tiles.appendChild(mainCanvas);
         createCHR(rom, CHR)
         printCHR2(CHR, ctx)
 
@@ -66,7 +97,6 @@ function readSingleFile(e) {
     reader.readAsBinaryString(file);
 }
 function printCHR2(CHR, ctx) {
-
     for (let k = 0; k < CHR.length; k = k + 32 * 8) {
         for (let j = 0; j < 8; j++) {
             for (let i = 0; i < 32; i++) {
@@ -78,10 +108,7 @@ function printCHR2(CHR, ctx) {
         }
     }
 }
-
-
-
-document.getElementById('file-input').addEventListener('change', readSingleFile, false);
+document.getElementById('file-input').addEventListener('change', readFile, false);
 document.getElementById('color1').addEventListener('change', colorChange(1));
 document.getElementById('color2').addEventListener('change', colorChange(2));
 document.getElementById('color3').addEventListener('change', colorChange(3));
