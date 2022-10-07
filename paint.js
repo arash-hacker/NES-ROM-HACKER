@@ -1,5 +1,6 @@
 var canvas = null;
 var scale = 4
+var spriteScale = 16
 var rom = []
 let CHR = []
 let colors = [
@@ -63,15 +64,15 @@ function ChangeRomDate(x, y, brush) {
         rom[currentByte + 0] = rom[currentByte + 0] | (0x00 | (1 << (7 - x)))
         rom[currentByte + 8] = rom[currentByte + 8] | (0x00 | (1 << (7 - x)))
     }
-    createCanvas(rom)
+    // createCanvas(rom)
 }
 function clickOnSprite(e) {
-    let x = Math.floor((e.clientX - e.target.offsetLeft) / scale)
-    let y = Math.floor((e.clientY - e.target.offsetTop) / scale)
+    let x = Math.floor((e.clientX - e.target.offsetLeft) / spriteScale)
+    let y = Math.floor((e.clientY - e.target.offsetTop) / spriteScale)
     let brushValue = parseInt(document.getElementById("brush").value) - 1
     let selectedColor = colors[brushValue]
     ctx2.fillStyle = selectedColor
-    ctx2.fillRect(x * scale, y * scale, 1 * scale, 1 * scale)
+    ctx2.fillRect(x * spriteScale, y * spriteScale, 1 * spriteScale, 1 * spriteScale)
 
     ctx.fillStyle = `rgba(0,255,0,1)`
     const xx = scale * 8 * (((selectedTile) / (8)) % 32) + x * scale
@@ -88,22 +89,22 @@ function clickOnSprite(e) {
 }
 function drawSprite(ct, x, y) {
     ct.fillStyle = 'rgba(0,0,0,1)';
-    ct.fillRect(0, 0, 8 * scale, 8 * scale);
+    ct.fillRect(0, 0, 8 * spriteScale, 8 * spriteScale);
     let ii = Math.floor(x / (8 * scale))
     let jj = Math.floor(y / (8 * scale))
     selectedTile = jj * 32 * 8 + 8 * ii
     for (let py = 0; py < 8; py++) {
         for (let px = 0; px < 8; px++) {//color pixel at x y
             ct.fillStyle = colors[CHR[selectedTile + py][px]];
-            ct.fillRect(px * scale, py * scale, 1 * scale, 1 * scale);
+            ct.fillRect(px * spriteScale, py * spriteScale, 1 * spriteScale, 1 * spriteScale);
         }
     }
 }
 function clickOnMainCanvas(e) {
     let sprite = document.getElementById('sprite');
     sprite.addEventListener("click", clickOnSprite, false)
-    sprite.width = 8 * scale;
-    sprite.height = 8 * scale;
+    sprite.width = 8 * spriteScale;
+    sprite.height = 8 * spriteScale;
     ctx2 = sprite.getContext("2d");
     var tile = document.getElementsByName("selected-tile")[0];
     tile.removeChild(tile.lastChild);
