@@ -11,6 +11,7 @@ let colors = [
 let ctx = null
 let ctx2 = null
 var selectedTile = null
+
 function createCHR(rom, CHR) {
     const Z = 16 + (16384 * rom[4])
     let i = 0
@@ -26,7 +27,6 @@ function createCHR(rom, CHR) {
                 if (char == '01') extracted3[index] = 2
                 if (char == '11') extracted3[index] = 3
             })
-            // extracted3 = extracted3.join('')
             CHR[k + j] = extracted3
         }
 
@@ -45,31 +45,25 @@ function colorChange(index) {
 }
 function ChangeRomDate(x, y, brush) {
     const Z = 16 + (16384 * rom[4])
-    const currentByte = Z + (selectedTile * 2 * 8) + y
-    // if (char == '00') extracted3[index] = 0
-    //if (char == '10') extracted3[index] = 1
-    //if (char == '01') extracted3[index] = 2
-    //if (char == '11') extracted3[index] = 3
+    console.log("tile,x,y,brush", selectedTile / 8, x, y, brush)
+    const currentByte = Z + ((selectedTile / 8) * 2 * 8) + y
     if (brush == 0) { //00
-        rom[currentByte + 0] = rom[currentByte + 0] & (0xff ^ (1 << x))
-        rom[currentByte + 8] = rom[currentByte + 8] & (0xff ^ (1 << x))
+        rom[currentByte + 0] = rom[currentByte + 0] & (0xff ^ (1 << (7 - x)))
+        rom[currentByte + 8] = rom[currentByte + 8] & (0xff ^ (1 << (7 - x)))
     }
     if (brush == 1) { //10
-        rom[currentByte + 0] = rom[currentByte + 0] | (0x00 | (1 << x))
-        rom[currentByte + 8] = rom[currentByte + 8] & (0xff ^ (1 << x))
+        rom[currentByte + 0] = rom[currentByte + 0] | (0x00 | (1 << (7 - x)))
+        rom[currentByte + 8] = rom[currentByte + 8] & (0xff ^ (1 << (7 - x)))
     }
-
     if (brush == 2) { //01
-        rom[currentByte + 0] = rom[currentByte + 0] & (0xff ^ (1 << x))
-        rom[currentByte + 8] = rom[currentByte + 8] | (0x00 | (1 << x))
+        rom[currentByte + 0] = rom[currentByte + 0] & (0xff ^ (1 << (7 - x)))
+        rom[currentByte + 8] = rom[currentByte + 8] | (0x00 | (1 << (7 - x)))
     }
-
     if (brush == 3) { //11
-        rom[currentByte + 0] = rom[currentByte + 0] | (0x00 | (1 << x))
-        rom[currentByte + 8] = rom[currentByte + 8] | (0x00 | (1 << x))
+        rom[currentByte + 0] = rom[currentByte + 0] | (0x00 | (1 << (7 - x)))
+        rom[currentByte + 8] = rom[currentByte + 8] | (0x00 | (1 << (7 - x)))
     }
-    // const contents = rom.map(r => String.fromCharCode(r)).join('')
-
+    createCanvas(rom)
 }
 function clickOnSprite(e) {
     let x = Math.floor((e.clientX - e.target.offsetLeft) / scale)
@@ -82,16 +76,12 @@ function clickOnSprite(e) {
     ctx.fillStyle = `rgba(0,255,0,1)`
     const xx = scale * 8 * (((selectedTile) / (8)) % 32) + x * scale
     const yy = scale * 8 * Math.floor((selectedTile) / (32 * 8)) + y * scale
-    // console.log(">>>x,y,tile,brush:", x, y, selectedTile, brushValue)
-    // console.log(">>>xx,yy", xx, yy)
     ctx.fillRect(
         xx,
         yy,
         1 * scale, 1 * scale)
 
     CHR[selectedTile + y][x] = brushValue
-
-    // change dependant rom bytes
     ChangeRomDate(x, y, brushValue)
 
 
@@ -102,7 +92,6 @@ function drawSprite(ct, x, y) {
     let ii = Math.floor(x / (8 * scale))
     let jj = Math.floor(y / (8 * scale))
     selectedTile = jj * 32 * 8 + 8 * ii
-    // console.log(selectedTile, x, y, ii, jj)
     for (let py = 0; py < 8; py++) {
         for (let px = 0; px < 8; px++) {//color pixel at x y
             ct.fillStyle = colors[CHR[selectedTile + py][px]];
@@ -111,7 +100,6 @@ function drawSprite(ct, x, y) {
     }
 }
 function clickOnMainCanvas(e) {
-    // alert((e.clientX - e.target.offsetLeft) + " " + (e.clientY - e.target.offsetTop))
     let sprite = document.getElementById('sprite');
     sprite.addEventListener("click", clickOnSprite, false)
     sprite.width = 8 * scale;
@@ -120,9 +108,17 @@ function clickOnMainCanvas(e) {
     var tile = document.getElementsByName("selected-tile")[0];
     tile.removeChild(tile.lastChild);
     tile.appendChild(sprite);
-    // ctx2.fillStyle = 'rgba(255,0,0,1)'
-    // ctx2.fillRect(0, 0, 8 * scale, 8 * scale)
     drawSprite(ctx2, e.clientX - e.target.offsetLeft, e.clientY - e.target.offsetTop)
+}
+function saveFile(fileName, urlFile) {
+    let a = document.createElement("a");
+    a.style = "display: none";
+    document.body.appendChild(a);
+    a.href = urlFile;
+    a.download = fileName;
+    a.click();
+    window.URL.revokeObjectURL(urlFile);
+    a.remove();
 }
 function readFile(e) {
     var file = e.target.files[0];
@@ -131,25 +127,25 @@ function readFile(e) {
     }
     var reader = new FileReader();
     reader.onload = function (e) {
-        var contents = e.target.result;
-
-        createCanvas(contents)
+        createCanvas(e.target.result)
     };
     reader.readAsBinaryString(file);
 }
 function createCanvas(contents) {
     rom = []
-    for (let i = 0; i < contents.length; i++) {
-        rom = rom.concat(contents.charCodeAt(i))
+    if (typeof (contents) == 'string') {
+        for (let i = 0; i < contents.length; i++) {
+            rom = rom.concat(contents.charCodeAt(i))
+        }
+    } else { // is Array of bytes
+        rom = contents
     }
     var mainCanvas = document.getElementById('canvas');
+    mainCanvas.removeEventListener("click", clickOnMainCanvas)
     mainCanvas.addEventListener("click", clickOnMainCanvas, false)
     mainCanvas.width = 32 * 8 * scale;
     mainCanvas.height = 16 * 8 * scale;
     ctx = mainCanvas.getContext("2d");
-    // var tiles = document.getElementsByName("tiles")[0];
-    // tiles.removeChild(tiles.lastChild);
-    // tiles.appendChild(mainCanvas);
     createCHR(rom, CHR)
     printCHR2(CHR, ctx)
 }
@@ -165,9 +161,14 @@ function printCHR2(CHR, ctx) {
         }
     }
 }
-document.getElementById('file-input').addEventListener('change', readFile, false);
+function exportRom(e) {
+    let url = window.URL.createObjectURL(new Blob([new Uint8Array(rom)]));
+    saveFile('output.nes', url);
+}
 document.getElementById('color1').addEventListener('change', colorChange(1));
 document.getElementById('color2').addEventListener('change', colorChange(2));
 document.getElementById('color3').addEventListener('change', colorChange(3));
 document.getElementById('color4').addEventListener('change', colorChange(4));
+document.getElementById('export').addEventListener('click', exportRom, false);
+document.getElementById('file-input').addEventListener('change', readFile, false);
 
