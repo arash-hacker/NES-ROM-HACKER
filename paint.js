@@ -1,4 +1,4 @@
-var canvas = document.createElement('canvas');
+var canvas = null;
 var scale = 4
 var rom = []
 let CHR = []
@@ -112,7 +112,7 @@ function drawSprite(ct, x, y) {
 }
 function clickOnMainCanvas(e) {
     // alert((e.clientX - e.target.offsetLeft) + " " + (e.clientY - e.target.offsetTop))
-    let sprite = document.createElement('canvas');
+    let sprite = document.getElementById('sprite');
     sprite.addEventListener("click", clickOnSprite, false)
     sprite.width = 8 * scale;
     sprite.height = 8 * scale;
@@ -142,14 +142,14 @@ function createCanvas(contents) {
     for (let i = 0; i < contents.length; i++) {
         rom = rom.concat(contents.charCodeAt(i))
     }
-    var mainCanvas = document.createElement('canvas');
+    var mainCanvas = document.getElementById('canvas');
     mainCanvas.addEventListener("click", clickOnMainCanvas, false)
     mainCanvas.width = 32 * 8 * scale;
     mainCanvas.height = 16 * 8 * scale;
     ctx = mainCanvas.getContext("2d");
-    var tiles = document.getElementsByName("tiles")[0];
-    tiles.removeChild(tiles.lastChild);
-    tiles.appendChild(mainCanvas);
+    // var tiles = document.getElementsByName("tiles")[0];
+    // tiles.removeChild(tiles.lastChild);
+    // tiles.appendChild(mainCanvas);
     createCHR(rom, CHR)
     printCHR2(CHR, ctx)
 }
