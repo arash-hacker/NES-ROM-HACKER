@@ -10,6 +10,7 @@ let colors = [
 ]
 let ctx = null
 let ctx2 = null
+var selectedTile = null
 function createCHR(rom, CHR) {
     const Z = 16 + (16384 * rom[4])
     let i = 0
@@ -18,7 +19,6 @@ function createCHR(rom, CHR) {
         for (let j = 0; j < 8; j++) {
             let extracted1 = [...rom[Z + i + j + 0].toString(2).padStart(8, '0')]
             let extracted2 = [...rom[Z + i + j + 8].toString(2).padStart(8, '0')]
-
             let extracted3 = extracted1.map((char, index) => char + extracted2[index])
             extracted3.filter((char, index) => {
                 if (char == '00') extracted3[index] = 0
@@ -43,13 +43,66 @@ function colorChange(index) {
 
     }
 }
+function ChangeRomDate(x, y, brush) {
+    const Z = 16 + (16384 * rom[4])
+    const currentByte = Z + (selectedTile * 2 * 8) + y
+    // if (char == '00') extracted3[index] = 0
+    //if (char == '10') extracted3[index] = 1
+    //if (char == '01') extracted3[index] = 2
+    //if (char == '11') extracted3[index] = 3
+    if (brush == 0) { //00
+        rom[currentByte + 0] = rom[currentByte + 0] & (0xff ^ (1 << x))
+        rom[currentByte + 8] = rom[currentByte + 8] & (0xff ^ (1 << x))
+    }
+    if (brush == 1) { //10
+        rom[currentByte + 0] = rom[currentByte + 0] | (0x00 | (1 << x))
+        rom[currentByte + 8] = rom[currentByte + 8] & (0xff ^ (1 << x))
+    }
+
+    if (brush == 2) { //01
+        rom[currentByte + 0] = rom[currentByte + 0] & (0xff ^ (1 << x))
+        rom[currentByte + 8] = rom[currentByte + 8] | (0x00 | (1 << x))
+    }
+
+    if (brush == 3) { //11
+        rom[currentByte + 0] = rom[currentByte + 0] | (0x00 | (1 << x))
+        rom[currentByte + 8] = rom[currentByte + 8] | (0x00 | (1 << x))
+    }
+    // const contents = rom.map(r => String.fromCharCode(r)).join('')
+
+}
+function clickOnSprite(e) {
+    let x = Math.floor((e.clientX - e.target.offsetLeft) / scale)
+    let y = Math.floor((e.clientY - e.target.offsetTop) / scale)
+    let brushValue = parseInt(document.getElementById("brush").value) - 1
+    let selectedColor = colors[brushValue]
+    ctx2.fillStyle = selectedColor
+    ctx2.fillRect(x * scale, y * scale, 1 * scale, 1 * scale)
+
+    ctx.fillStyle = `rgba(0,255,0,1)`
+    const xx = scale * 8 * (((selectedTile) / (8)) % 32) + x * scale
+    const yy = scale * 8 * Math.floor((selectedTile) / (32 * 8)) + y * scale
+    // console.log(">>>x,y,tile,brush:", x, y, selectedTile, brushValue)
+    // console.log(">>>xx,yy", xx, yy)
+    ctx.fillRect(
+        xx,
+        yy,
+        1 * scale, 1 * scale)
+
+    CHR[selectedTile + y][x] = brushValue
+
+    // change dependant rom bytes
+    ChangeRomDate(x, y, brushValue)
+
+
+}
 function drawSprite(ct, x, y) {
     ct.fillStyle = 'rgba(0,0,0,1)';
     ct.fillRect(0, 0, 8 * scale, 8 * scale);
     let ii = Math.floor(x / (8 * scale))
     let jj = Math.floor(y / (8 * scale))
-    let selectedTile = jj * 32 * 8 + 8 * ii
-    console.log(selectedTile, x, y, ii, jj)
+    selectedTile = jj * 32 * 8 + 8 * ii
+    // console.log(selectedTile, x, y, ii, jj)
     for (let py = 0; py < 8; py++) {
         for (let px = 0; px < 8; px++) {//color pixel at x y
             ct.fillStyle = colors[CHR[selectedTile + py][px]];
@@ -60,15 +113,15 @@ function drawSprite(ct, x, y) {
 function clickOnMainCanvas(e) {
     // alert((e.clientX - e.target.offsetLeft) + " " + (e.clientY - e.target.offsetTop))
     let sprite = document.createElement('canvas');
-    sprite.addEventListener("click", alert, false)
+    sprite.addEventListener("click", clickOnSprite, false)
     sprite.width = 8 * scale;
     sprite.height = 8 * scale;
     ctx2 = sprite.getContext("2d");
-    var selectedTile = document.getElementsByName("selected-tile")[0];
-    selectedTile.removeChild(selectedTile.lastChild);
-    selectedTile.appendChild(sprite);
-    ctx2.fillStyle = 'rgba(255,0,0,1)'
-    ctx2.fillRect(0, 0, 8 * scale, 8 * scale)
+    var tile = document.getElementsByName("selected-tile")[0];
+    tile.removeChild(tile.lastChild);
+    tile.appendChild(sprite);
+    // ctx2.fillStyle = 'rgba(255,0,0,1)'
+    // ctx2.fillRect(0, 0, 8 * scale, 8 * scale)
     drawSprite(ctx2, e.clientX - e.target.offsetLeft, e.clientY - e.target.offsetTop)
 }
 function readFile(e) {
@@ -79,22 +132,26 @@ function readFile(e) {
     var reader = new FileReader();
     reader.onload = function (e) {
         var contents = e.target.result;
-        for (let i = 0; i < contents.length; i++) {
-            rom = rom.concat(contents.charCodeAt(i))
-        }
-        var mainCanvas = document.createElement('canvas');
-        mainCanvas.addEventListener("click", clickOnMainCanvas, false)
-        mainCanvas.width = 32 * 8 * scale;
-        mainCanvas.height = 16 * 8 * scale;
-        ctx = mainCanvas.getContext("2d");
-        var tiles = document.getElementsByName("tiles")[0];
-        tiles.removeChild(tiles.lastChild);
-        tiles.appendChild(mainCanvas);
-        createCHR(rom, CHR)
-        printCHR2(CHR, ctx)
 
+        createCanvas(contents)
     };
     reader.readAsBinaryString(file);
+}
+function createCanvas(contents) {
+    rom = []
+    for (let i = 0; i < contents.length; i++) {
+        rom = rom.concat(contents.charCodeAt(i))
+    }
+    var mainCanvas = document.createElement('canvas');
+    mainCanvas.addEventListener("click", clickOnMainCanvas, false)
+    mainCanvas.width = 32 * 8 * scale;
+    mainCanvas.height = 16 * 8 * scale;
+    ctx = mainCanvas.getContext("2d");
+    var tiles = document.getElementsByName("tiles")[0];
+    tiles.removeChild(tiles.lastChild);
+    tiles.appendChild(mainCanvas);
+    createCHR(rom, CHR)
+    printCHR2(CHR, ctx)
 }
 function printCHR2(CHR, ctx) {
     for (let k = 0; k < CHR.length; k = k + 32 * 8) {
